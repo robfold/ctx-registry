@@ -39,12 +39,12 @@
 
       <div class="card-stage" aria-hidden="true">
         <div class="catalog-card">
-          <p class="card-call"><span>query-docs</span><span>0.29 s</span></p>
+          <p class="card-call"><span>query-docs</span><span>0.20 s</span></p>
           <p>next@16.4.6</p>
-          <p>"protect a dashboard route"</p>
+          <p>"refresh a fetch every minute"</p>
           <dl class="card-fields">
-            <dt>Found</dt><dd>Authorization</dd>
-            <dt>Also</dt><dd>Optimistic checks with Proxy</dd>
+            <dt>Found</dt><dd>use cache > Revalidation</dd>
+            <dt>Also</dt><dd>Time-based revalidation</dd>
             <dt>Served</dt><dd>from your Cloudflare edge</dd>
           </dl>
           <span class="stamp">Answered at the edge</span>
@@ -107,7 +107,7 @@ node bin/ctx-index.mjs --all</code></pre></div>
               <p>The agent finds the library, then asks its question, the same way it uses Context7.</p>
               <div class="code"><pre><code>resolve-library-id  libraryName: "next"
 query-docs          libraryId: "next@16.4.6"
-                    query: "protect a dashboard route"</code></pre></div>
+                    query: "refresh a fetch every minute"</code></pre></div>
             </li>
           </ol>
 
@@ -137,9 +137,9 @@ query-docs          libraryId: "next@16.4.6"
             <text class="t1" x="199" y="268">Vectorize</text>
             <text class="t2" x="199" y="288">meaning search,</text>
             <text class="t2" x="199" y="306">Workers AI embeddings</text>
-            <text class="edge-label" x="10" y="352">Both run at the same time, so a question</text>
-            <text class="edge-label" x="10" y="370">about "middleware" still finds Next.js 16's</text>
-            <text class="edge-label" x="10" y="388">"proxy" docs.</text>
+            <text class="edge-label" x="10" y="352">Both run at the same time. Exact API names</text>
+            <text class="edge-label" x="10" y="370">match by words; plain-language questions</text>
+            <text class="edge-label" x="10" y="388">match by meaning.</text>
           </svg>
         </div>
       </div>
@@ -159,7 +159,7 @@ query-docs          libraryId: "next@16.4.6"
           <div>
             <dt>Keyword and meaning search together</dt>
             <dd><ul>
-              <li>Ask about "middleware" and it still finds Next.js 16's "proxy" docs.</li>
+              <li>Ask "refresh a fetch every minute" and the Next.js revalidation docs come back first.</li>
               <li>An exact API name still matches word for word.</li>
             </ul></dd>
           </div>
@@ -206,7 +206,7 @@ query-docs          libraryId: "next@16.4.6"
           </table>
         </div>
         <p class="note">Context7 figures are from <a href="https://context7.com/plans">context7.com/plans</a>, read on 21 November 2026. Context7 also hosts thousands of public libraries for you; with ctx-registry you load the libraries you use.</p>
-        <p class="note">ctx-registry estimate at Cloudflare list prices: each question is one 1,024-dimension Vectorize query ($0.01 per million dimensions), one Workers AI embedding of the question, and one Worker request. Embedding the 117,819 sections we host once is estimated at under $1.</p>
+        <p class="note">ctx-registry estimate at Cloudflare list prices: each question is one 1,024-dimension Vectorize query ($0.01 per million dimensions), one Workers AI embedding of the question, and one Worker request. Embedding the 117,956 sections we host once is estimated at under $1.</p>
       </div>
     </section>
 
@@ -214,12 +214,12 @@ query-docs          libraryId: "next@16.4.6"
       <div class="wrap">
         <h2 id="proof">We run it for our own agents</h2>
         <ul class="proof-numbers">
-          <li><strong>196</strong><span>libraries of official docs</span></li>
-          <li><strong>117,819</strong><span>sections searchable by keyword and meaning</span></li>
-          <li><strong>0.25–0.38 s</strong><span>server time per answer, measured warm</span></li>
+          <li><strong>197</strong><span>libraries of official docs</span></li>
+          <li><strong>117,956</strong><span>sections searchable by keyword and meaning</span></li>
+          <li><strong>0.16–0.30 s</strong><span>median server time on six test questions</span></li>
         </ul>
         <div class="prose">
-          <p>Asked "how do I protect a dashboard route so only logged-in users see it", it returns the Authorization section of the Next.js authentication guide first, then optimistic checks with Proxy. The handler has 40 tests, and each guard was broken on purpose to prove its test fails.</p>
+          <p>Asked "run a job every hour with cron triggers", it returns Cloudflare's Cron Triggers docs first. Asked "refresh a fetch every minute" with the Context7-style ID <code>/vercel/next.js</code>, it returns the Next.js revalidation docs. The handler has 46 tests, and each guard was broken on purpose to prove its test fails.</p>
         </div>
       </div>
     </section>
@@ -262,7 +262,7 @@ openssl rand -hex 32 | npx wrangler secret put PUBLISH_TOKEN</code></pre></div>
       <div class="wrap">
         <h2 id="limits">What it doesn't do yet</h2>
         <ul class="limits">
-          <li>Answers are the docs' own sections. Context7 also writes a short summary for each code example; ctx-registry does not.</li>
+          <li>Answers are the docs' own sections. Context7 also writes its own title and summary for each code example, so on questions phrased as a task, such as "protect a dashboard route", its top answers are still sharper.</li>
           <li>You choose and load the libraries. There is no shared catalog of thousands of libraries, and automatic rebuilds are not in this release.</li>
           <li>The read token works like an API key. There is no rate limit for anyone who holds it.</li>
           <li>From some networks, <code>workers.dev</code> traffic takes a long route; put the Worker on your own domain if that matters.</li>

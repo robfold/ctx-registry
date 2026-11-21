@@ -6,7 +6,7 @@
 
 코딩 에이전트가 MCP 주소 하나에 연결해 질문하면, 라이브러리 공식 문서에서 맞는 절을 찾아 돌려줍니다. Context7과 같은 도구 두 개(`resolve-library-id`, `query-docs`)를 써서, Context7용으로 쓴 프롬프트가 그대로 통합니다. Cloudflare Worker 하나와 D1(단어 검색), Vectorize(의미 검색), Workers AI(임베딩)로 돕니다. 월 한도가 없고, Cloudflare 정가로 질문 100만 개에 약 11달러입니다.
 
-- **단어 검색과 의미 검색을 함께 씁니다.** 둘을 동시에 돌려 순위를 합칩니다. 그래서 "middleware"를 물어도 Next.js 16의 "proxy" 문서를 찾고, 정확한 API 이름은 글자 그대로 맞춥니다.
+- **단어 검색과 의미 검색을 함께 씁니다.** 둘을 동시에 돌려 순위를 합칩니다. 정확한 API 이름은 글자 그대로, 평소 말로 쓴 질문은 의미로 맞춥니다. "refresh a fetch every minute"를 물으면 Next.js 재검증 문서가 먼저 나옵니다.
 - **출처와 버전을 내가 정합니다.** [`@neuledge/context`](https://github.com/neuledge/context) CLI로 메인테이너의 저장소나 문서 사이트에서 패키지를 만듭니다. `next@16.2.9`와 `next@16.4.6`을 나란히 둡니다.
 - **원하면 오프라인 사본도 됩니다.** 같은 서버가 `context` CLI용 패키지 레지스트리도 겸합니다. 맥에서 패키지를 한 번 받아 로컬에서 검색할 수 있습니다.
 
@@ -80,7 +80,7 @@ Cloudflare 정가로 질문 1개는 1,024차원 Vectorize 조회 1번(조회 차
 
 ## 한계
 
-- 답은 문서 원래의 절입니다. Context7은 코드 예시마다 짧은 요약을 따로 써 두지만, ctx-registry는 쓰지 않습니다.
+- 답은 문서 원래의 절입니다. Context7은 코드 예시마다 제목과 요약을 따로 써 둡니다. 그래서 "protect a dashboard route"처럼 할 일로 묻는 질문에는 아직 Context7의 상위 답이 더 정확합니다.
 - 라이브러리는 내가 골라 올립니다. 자동 재빌드는 이번 판에 없습니다.
 - 읽기 토큰은 API 키처럼 동작하고, 토큰을 가진 쪽에는 사용량 제한이 없습니다. 새면 `wrangler secret put READ_TOKEN`으로 바꿉니다.
 - 색인 묶음 하나는 절 200개까지입니다. `ctx-index`가 알아서 나눕니다.
