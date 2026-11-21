@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ctx-registry",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  // Set CLOUDFLARE_ACCOUNT_ID in your shell instead of committing an account id.
+  "workers_dev": true,
+  // Version preview hosts would be a second public hostname; keep them off.
+  "preview_urls": false,
+  "r2_buckets": [{ "binding": "REGISTRY", "bucket_name": "ctx-registry" }],
+  "vars": { "UPSTREAM_URL": "https://api.context.neuledge.com" },
+  // READ_TOKEN and PUBLISH_TOKEN are secrets: `wrangler secret put READ_TOKEN`.
+  "observability": { "enabled": true }
+}
