@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>ctx-registry: a self-hosted docs registry for coding agents</title>
-  <meta name="description" content="Keep your internal docs in your own Cloudflare account. ctx-registry is a free, open-source registry for the context CLI: build a docs package once, and every machine and agent installs the same file.">
-  <meta property="og:title" content="Your internal docs never leave your Cloudflare.">
+  <title>ctx-registry: official docs for coding agents, on your own Cloudflare</title>
+  <meta name="description" content="Give your coding agents official library docs for the exact version you run, with no quota. ctx-registry is a free, open-source registry for the context CLI on one Cloudflare Worker and one R2 bucket.">
+  <meta property="og:title" content="Official docs for your agents. Your version. No quota.">
   <meta property="og:description" content="A free, self-hosted docs registry for coding agents. One Cloudflare Worker, one R2 bucket.">
   <link rel="alternate" hreflang="ko" href="/ko/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='3' fill='%23fbfbf8' stroke='%2314213d' stroke-width='2'/%3E%3Cpath d='M2 11h28' stroke='%23cf4656' stroke-width='2'/%3E%3Ccircle cx='16' cy='22' r='2' fill='%2314213d'/%3E%3C/svg%3E">
@@ -27,9 +27,9 @@
   <main>
     <div class="wrap hero">
       <div>
-        <p class="audience">For teams whose coding agents read private docs</p>
-        <h1>Your internal docs never leave your Cloudflare.</h1>
-        <p class="lede">ctx-registry is a self-hosted registry for the open-source <code>context</code> CLI. Build a docs package once, and every machine and agent installs the same file from your own Cloudflare account. Packages you don't hold come from the public registry, so nothing else changes.</p>
+        <p class="audience">For developers who run coding agents every day</p>
+        <h1><span>Official docs for your agents.</span> <span>Your version.</span> <span>No quota.</span></h1>
+        <p class="lede">ctx-registry is a self-hosted registry for the open-source <code>context</code> CLI. Build a package from a library's official docs once, and every machine and agent installs that exact version from your own Cloudflare account. Libraries you haven't built come from the public registry, so nothing else changes.</p>
         <div class="actions">
           <a class="btn btn-primary" href="#deploy">Deploy on Cloudflare</a>
           <a class="btn btn-secondary" href="https://github.com/robfold/ctx-registry">Read the code on GitHub</a>
@@ -43,6 +43,7 @@
           <p>Next.js documentation</p>
           <p>2,118 sections, searchable offline</p>
           <dl class="card-fields">
+            <dt>Source</dt><dd>github.com/vercel/next.js</dd>
             <dt>Shelf</dt><dd>your R2 bucket</dd>
             <dt>Read by</dt><dd>Claude Code, Codex, Cursor</dd>
           </dl>
@@ -53,19 +54,13 @@
 
     <section aria-labelledby="ask">
       <div class="wrap">
-        <h2 id="ask">Teams keep asking for the same thing</h2>
+        <h2 id="ask">Where hosted docs get in the way</h2>
         <p class="intro">From the public issue tracker of Context7, the hosted docs service most coding agents use today.</p>
         <ul class="voices">
           <li>
             <figure>
-              <blockquote>We would like to add internal docs that we can't really have requests about going out to an external service.</blockquote>
+              <blockquote>If context7.com has issues, Context7 can't fetch docs, which kind of stops us in our tracks.</blockquote>
               <figcaption><a href="https://github.com/upstash/context7/issues/59">Context7 issue #59</a>, April 2025</figcaption>
-            </figure>
-          </li>
-          <li>
-            <figure>
-              <blockquote>This is necessary, as access to Context7 MCP is blocked in enterprise setup.</blockquote>
-              <figcaption><a href="https://github.com/upstash/context7/issues/59">Context7 issue #59</a>, June 2025</figcaption>
             </figure>
           </li>
           <li>
@@ -74,8 +69,14 @@
               <figcaption><a href="https://github.com/upstash/context7/issues/3406">Context7 issue #3406</a>, October 2026</figcaption>
             </figure>
           </li>
+          <li>
+            <figure>
+              <blockquote>We don't have much control over when the docs we rely on get scanned and updated in the main index.</blockquote>
+              <figcaption><a href="https://github.com/upstash/context7/issues/59">Context7 issue #59</a>, April 2025</figcaption>
+            </figure>
+          </li>
         </ul>
-        <p class="answer">Context7 offers self-hosting on its Enterprise plan. ctx-registry is a free, self-hosted registry you deploy to a Cloudflare account you already have.</p>
+        <p class="answer">ctx-registry builds each package from the official source you pick, keeps every version you pin, and serves it from your own Cloudflare account. Once installed, a package is searched on the agent's machine: no quota to hit, no outage to wait out.</p>
       </div>
     </section>
 
@@ -152,10 +153,10 @@
             </ul></dd>
           </div>
           <div>
-            <dt>Private packages live in your R2 bucket</dt>
+            <dt>Built from the official source you pick</dt>
             <dd><ul>
-              <li>Internal API docs stay inside an account you control.</li>
-              <li>A package changes when you publish it, not when someone else's crawler runs.</li>
+              <li>You choose the repo or docs site, so agents read the maintainers' own docs.</li>
+              <li>A package changes when you rebuild and publish it, not when someone else's index refreshes.</li>
             </ul></dd>
           </div>
           <div>

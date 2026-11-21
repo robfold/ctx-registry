@@ -81,10 +81,12 @@ h1 {
   line-height: 1.06;
   font-weight: 600;
   letter-spacing: -0.025em;
-  max-width: 14ch;
+  max-width: 15ch;
   text-wrap: balance;
 }
-:lang(ko) h1 { letter-spacing: -0.03em; line-height: 1.18; max-width: 13ch; }
+/* One sentence per line: the promise reads as three beats. */
+h1 > span { display: block; }
+:lang(ko) h1 { letter-spacing: -0.03em; line-height: 1.18; max-width: 9em; }
 
 .lede { margin: 1.5rem 0 0; max-width: 36rem; font-size: 1.2rem; color: var(--ink); }
 
@@ -101,9 +103,11 @@ h1 {
 
 /* Catalog card */
 /* clip: the stamp starts at 1.7x scale; without this it widens the mobile layout viewport while it lands. */
-.card-stage { display: flex; justify-content: center; padding: 1rem 1.5rem 2rem; overflow-x: clip; }
+.card-stage { display: flex; justify-content: center; padding: 1rem 0.75rem 2rem; overflow-x: clip; }
+@media (min-width: 720px) { .card-stage { padding-inline: 1.5rem; } }
+@media (max-width: 719px) { .catalog-card { padding-inline: 1.1rem; } }
 /* Ruled like a library index card: every text row sits on a blue line; the red line closes the heading row.
-   Rows: heading, blank, two text rows, blank, two field rows, then two rows kept free for the stamp. */
+   Rows: heading, blank, two text rows, blank, three field rows, then two rows kept free for the stamp. */
 .catalog-card {
   --row: 1.55rem;
   --pad: 1.3rem;
@@ -116,7 +120,8 @@ h1 {
     var(--card);
   color: var(--card-ink);
   font-family: var(--type);
-  font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+  /* Small enough on a 390px phone that the longest field row (source URL) stays on one ruled line. */
+  font-size: clamp(0.72rem, 3.1vw, 0.95rem);
   line-height: var(--row);
   border-radius: 6px;
   box-shadow: 0 1px 0 rgba(20, 33, 61, 0.08), 0 18px 40px -18px rgba(20, 33, 61, 0.45);
@@ -132,11 +137,12 @@ h1 {
 }
 .catalog-card p { margin: 0; }
 .catalog-card .card-call { display: flex; justify-content: space-between; gap: 1rem; font-weight: 700; margin: 0 0 var(--row); }
-.card-fields { display: grid; grid-template-columns: 9ch minmax(0, 1fr); margin: var(--row) 0 0; }
+.card-fields { display: grid; grid-template-columns: 8ch minmax(0, 1fr); margin: var(--row) 0 0; }
+.card-fields dd { white-space: nowrap; }
 .card-fields dt, .card-fields dd { margin: 0; }
 
 .stamp {
-  position: absolute; right: 1.1rem; top: calc(var(--pad) + 7 * var(--row) + 0.35rem);
+  position: absolute; right: 1.1rem; top: calc(var(--pad) + 8 * var(--row) + 0.35rem);
   padding: 0.3rem 0.65rem;
   border: 3px double var(--stamp); border-radius: 6px;
   color: var(--stamp);
@@ -155,7 +161,7 @@ h1 {
 /* Sections */
 section { padding-block: 4rem; }
 @media (min-width: 960px) { section { padding-block: 5.5rem; } }
-h2 { margin: 0 0 1rem; font-size: clamp(1.6rem, 3.6vw, 2.2rem); line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; max-width: 26ch; }
+h2 { margin: 0 0 1rem; font-size: clamp(1.6rem, 3.6vw, 2.2rem); line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; max-width: 26ch; text-wrap: balance; }
 .intro { margin: 0 0 2.25rem; max-width: 40rem; color: var(--muted); }
 .prose { max-width: 40rem; }
 .prose p { margin: 0 0 1rem; }

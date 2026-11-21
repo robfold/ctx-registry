@@ -2,12 +2,12 @@
 
 English · [한국어](README.ko.md)
 
-A private documentation registry for coding agents, on one Cloudflare Worker and one R2 bucket.
+Official library docs for your coding agents, for the version you run, with no quota. One Cloudflare Worker and one R2 bucket.
 
-It serves the [`@neuledge/context`](https://github.com/neuledge/context) CLI and MCP server. Build a docs package once on one machine, publish it, and every other machine and agent installs the same file. Packages you do not hold are fetched from the public Neuledge registry, so you can point the CLI at this server and nothing else.
+It serves the [`@neuledge/context`](https://github.com/neuledge/context) CLI and MCP server. Build a package from a library's official docs once on one machine, publish it, and every other machine and agent installs the same file. Packages you do not hold are fetched from the public Neuledge registry, so you can point the CLI at this server and nothing else.
 
 - **Search runs on the agent's machine.** The server only hands out SQLite files. After install, a query costs nothing and works offline.
-- **Your docs stay yours.** Private API docs, internal guides, and pinned versions live in your own bucket, behind a secret URL.
+- **You pick the source and the version.** Build from the official repo or docs site, keep every version you pin, and update a package when you choose to.
 - **It costs close to nothing.** R2 has no egress fees. One install is at most two R2 lists (Class A) and two reads (Class B), because a lookup also checks the `docs` registry: under $10 per million installs at list price. The R2 free tier holds 10 GB.
 
 ## How it works
