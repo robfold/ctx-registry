@@ -8,7 +8,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test",
-    "cf:deploy": "npm run check && wrangler deploy"
+    "cf:deploy": "npm run check && wrangler deploy",
+    "site:deploy": "wrangler deploy -c site/wrangler.jsonc"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261121.1",
