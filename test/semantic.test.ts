@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { findLibrary, indexBatch, removeLibrary, searchDocs, type IndexChunk, type Semantic } from "../src/docs";
+import { findLibrary, indexBatch, removeLibrary, searchDocs, withRateLimitRetry, type IndexChunk, type Semantic } from "../src/docs";
 import { fakeD1 } from "./d1-sqlite";
 
 /**
@@ -33,6 +33,7 @@ function fakeAi() {
 
 function fakeVectorize() {
   const store = new Map<string, { values: number[]; namespace?: string }>();
+  const stats = { deleteCalls: 0, rateLimitNextUpserts: 0 };
   const cos = (a: number[], b: number[]) => {
     const dot = a.reduce((s, x, i) => s + x * b[i]!, 0);
     const n = Math.hypot(...a) * Math.hypot(...b);
@@ -42,10 +43,15 @@ function fakeVectorize() {
     // Same per-call limits the real Vectorize enforces.
     upsert: async (vs: { id: string; values: number[]; namespace?: string }[]) => {
       if (vs.length > 1000) throw new Error("upsert: max 1000 vectors");
+      if (stats.rateLimitNextUpserts > 0) {
+        stats.rateLimitNextUpserts--;
+        throw new Error("VECTOR_UPSERT_ERROR (code = 40041): Too Many Requests");
+      }
       for (const v of vs) store.set(v.id, { values: v.values, namespace: v.namespace });
       return { mutationId: "m" };
     },
     deleteByIds: async (ids: string[]) => {
+      stats.deleteCalls++;
       if (ids.length > 100) throw new Error("VECTOR_DELETE_ERROR (code = 40007): too many ids in payload; max id count is 100");
       for (const id of ids) store.delete(id);
       return { mutationId: "m" };
@@ -59,7 +65,7 @@ function fakeVectorize() {
       count: 0,
     }),
   };
-  return { vectors: vectors as unknown as VectorizeIndex, store };
+  return { vectors: vectors as unknown as VectorizeIndex, store, stats };
 }
 
 const chunk = (seq: number, doc_path: string, section_title: string, content: string): IndexChunk => ({
@@ -83,11 +89,13 @@ const QUESTION = "middleware redirect unauthenticated users";
 let db: ReturnType<typeof fakeD1>;
 let semantic: Semantic;
 let store: Map<string, { values: number[]; namespace?: string }>;
+let stats: { deleteCalls: number; rateLimitNextUpserts: number };
 
 beforeEach(async () => {
   db = fakeD1();
   const v = fakeVectorize();
   store = v.store;
+  stats = v.stats;
   semantic = { ai: fakeAi().ai, vectors: v.vectors };
   await indexBatch(db, { library: { name: "next", version: "16.4.6" }, chunks: [KEYWORD_BAIT, ANSWER], reset: true, final: true }, undefined, semantic);
 });
@@ -127,6 +135,57 @@ describe("meaning search", () => {
     expect(store.size).toBe(152);
     await indexBatch(db, { library: { name: "big", version: "1.0.0" }, chunks: [], reset: true, final: true }, undefined, semantic);
     expect(store.size).toBe(2);
+  });
+
+  it("retries a rate-limited Vectorize call and gives up on other errors at once", async () => {
+    const waits: number[] = [];
+    let calls = 0;
+    const ok = await withRateLimitRetry(async () => {
+      if (++calls < 3) throw new Error("VECTOR_UPSERT_ERROR (code = 40041): Too Many Requests");
+      return "done";
+    }, 6, async (ms) => void waits.push(ms));
+    expect(ok).toBe("done");
+    expect(waits).toEqual([300, 600]);
+    await expect(withRateLimitRetry(async () => { throw new Error("VECTOR_DELETE_ERROR (code = 40007)"); }, 6, async () => {})).rejects.toThrow("40007");
+  });
+
+  it("finishes indexing when Vectorize rate-limits an upsert once", async () => {
+    stats.rateLimitNextUpserts = 1;
+    await indexBatch(db, { library: { name: "rl", version: "1.0.0" }, chunks: [ANSWER], reset: true, final: true }, undefined, semantic);
+    expect((await findLibrary(db, "rl"))?.vectors).toBe(1);
+  });
+
+  it("re-sending a middle batch replaces its sections instead of duplicating them", async () => {
+    const lib = { name: "resend", version: "1.0.0" };
+    await indexBatch(db, { library: lib, chunks: [chunk(1, "a.md", "A", "proxy one"), chunk(2, "a.md", "B", "proxy two")], reset: true }, undefined, semantic);
+    const middle = { library: lib, chunks: [chunk(3, "b.md", "C", "redirect three"), chunk(4, "b.md", "D", "login four")] };
+    await indexBatch(db, middle, undefined, semantic);
+    await indexBatch(db, middle, undefined, semantic); // the client retried
+    await indexBatch(db, { library: lib, chunks: [], final: true }, undefined, semantic);
+    const found = (await findLibrary(db, "resend"))!;
+    expect(found.chunks).toBe(4);
+    expect([...store.values()].filter((v) => v.namespace === `L${found.id}`)).toHaveLength(4);
+  });
+
+  it("skips vector deletes for a library that never had vectors", async () => {
+    await indexBatch(db, { library: { name: "plain", version: "1.0.0" }, chunks: [ANSWER], reset: true, final: true }); // keyword only
+    const before = stats.deleteCalls;
+    await indexBatch(db, { library: { name: "plain", version: "1.0.0" }, chunks: [ANSWER], reset: true, final: true }, undefined, semantic);
+    expect(stats.deleteCalls).toBe(before);
+  });
+
+  it("ignores a leftover vector that points at another library's section", async () => {
+    await indexBatch(
+      db,
+      { library: { name: "other", version: "1.0.0" }, chunks: [chunk(1, "secret.md", "Login", "redirect unauthenticated users to login with a proxy")], reset: true, final: true },
+      undefined,
+      semantic,
+    );
+    const next = (await findLibrary(db, "next"))!;
+    const otherChunk = db.raw.prepare("SELECT c.id FROM chunks c JOIN libraries l ON l.id = c.library_id WHERE l.name = 'other'").get() as { id: number };
+    store.set(String(otherChunk.id), { values: [1, 1, 1, 0], namespace: `L${next.id}` }); // stale vector in next's namespace
+    const hybrid = await searchDocs(db, next, QUESTION, undefined, semantic);
+    expect(hybrid.map((s) => s.source)).not.toContain("secret.md");
   });
 
   it("drops a library's old vectors when it is re-indexed or removed", async () => {

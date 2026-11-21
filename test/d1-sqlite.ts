@@ -2,7 +2,7 @@
  * The slice of the D1 API the Worker uses, on Node's built-in SQLite, with the real
  * migration applied. FTS5, triggers, bm25 and RETURNING all run for real.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
 class Statement {
@@ -32,7 +32,10 @@ class Statement {
 
 export function fakeD1() {
   const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(new URL("../migrations/0001_docs.sql", import.meta.url), "utf8"));
+  const dir = new URL("../migrations/", import.meta.url);
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
+    db.exec(readFileSync(new URL(file, dir), "utf8"));
+  }
   const d1 = {
     prepare: (sql: string) => new Statement(db, sql),
     batch: async (stmts: Statement[]) => {

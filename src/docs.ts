@@ -13,6 +13,8 @@ export interface Library {
   chunks: number;
   tokens: number;
   ready: number;
+  /** 1 when the library's sections have vectors in Vectorize. */
+  vectors: number;
   updated: string;
 }
 
@@ -223,14 +225,32 @@ export async function embed(ai: Ai, texts: string[]): Promise<number[][]> {
   return out;
 }
 
-async function chunksById(db: D1Database, ids: number[]): Promise<ChunkHit[]> {
+/**
+ * Retries a Vectorize call that was rate-limited (code 40041, "Too Many Requests"),
+ * waiting 0.3 s, 0.6 s, 1.2 s, … between tries. Other errors are thrown at once.
+ */
+export async function withRateLimitRetry<T>(run: () => Promise<T>, tries = 6, wait = (ms: number) => new Promise((r) => setTimeout(r, ms))): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (attempt >= tries || !/40041|Too Many Requests/i.test(message)) throw err;
+      await wait(300 * 2 ** (attempt - 1));
+    }
+  }
+}
+
+/** Sections by id, only from the given library: a stale vector can never surface another library's text. */
+async function chunksById(db: D1Database, libraryId: number, ids: number[]): Promise<ChunkHit[]> {
   if (ids.length === 0) return [];
   const rows = (
     await db
       .prepare(
-        `SELECT id, seq, doc_path, doc_title, section_title, content, tokens, 0 AS score FROM chunks WHERE id IN (${ids.map(() => "?").join(", ")})`,
+        `SELECT id, seq, doc_path, doc_title, section_title, content, tokens, 0 AS score FROM chunks
+         WHERE library_id = ? AND id IN (${ids.map(() => "?").join(", ")})`,
       )
-      .bind(...ids)
+      .bind(libraryId, ...ids)
       .all<ChunkHit>()
   ).results;
   const byId = new Map(rows.map((r) => [r.id, r]));
@@ -238,10 +258,11 @@ async function chunksById(db: D1Database, ids: number[]): Promise<ChunkHit[]> {
 }
 
 async function meaningHits(db: D1Database, library: Library, query: string, semantic: Semantic): Promise<ChunkHit[]> {
+  if (library.vectors !== 1) return [];
   const [vector] = await embed(semantic.ai, [query]);
   if (!vector) return [];
   const res = await semantic.vectors.query(vector, { topK: VECTOR_HITS, namespace: namespaceOf(library.id) });
-  return chunksById(db, res.matches.map((m) => Number(m.id)).filter(Number.isInteger));
+  return chunksById(db, library.id, res.matches.map((m) => Number(m.id)).filter(Number.isInteger));
 }
 
 /**
@@ -359,72 +380,90 @@ export function validateBatch(body: unknown): IndexBatch {
   return b;
 }
 
+/** Deletes the vectors of a library's chunks, optionally only chunks with seq in [from, to]. */
+async function dropVectors(db: D1Database, libraryId: number, semantic: Semantic, range?: [number, number]) {
+  const ids = (
+    await (range
+      ? db.prepare("SELECT id FROM chunks WHERE library_id = ? AND seq BETWEEN ? AND ?").bind(libraryId, range[0], range[1])
+      : db.prepare("SELECT id FROM chunks WHERE library_id = ?").bind(libraryId)
+    ).all<{ id: number }>()
+  ).results.map((r) => String(r.id));
+  // Vectorize rejects more than 100 ids per delete (VECTOR_DELETE_ERROR 40007), though upserts take 1,000.
+  for (let i = 0; i < ids.length; i += 100) {
+    const slice = ids.slice(i, i + 100);
+    await withRateLimitRetry(() => semantic.vectors.deleteByIds(slice));
+  }
+}
+
 /**
  * Index one batch. The first batch (`reset`) replaces any earlier copy and hides the
  * library from search; the last batch (`final`) counts the chunks and makes it searchable.
+ * Re-sending a batch is safe: chunks in the batch's seq range are replaced, not duplicated.
  */
-async function dropVectors(db: D1Database, libraryId: number, semantic?: Semantic) {
-  if (!semantic) return;
-  const ids = (await db.prepare("SELECT id FROM chunks WHERE library_id = ?").bind(libraryId).all<{ id: number }>()).results.map((r) => String(r.id));
-  // Vectorize rejects more than 100 ids per delete (VECTOR_DELETE_ERROR 40007), though upserts take 1,000.
-  for (let i = 0; i < ids.length; i += 100) await semantic.vectors.deleteByIds(ids.slice(i, i + 100));
-}
-
 export async function indexBatch(db: D1Database, batch: IndexBatch, now = new Date().toISOString(), semantic?: Semantic) {
   const { name, version } = batch.library;
-  let lib: { id: number } | null;
+  let lib: { id: number; vectors: number } | null;
   if (batch.reset) {
+    const before = await db.prepare("SELECT id, vectors FROM libraries WHERE name = ? AND version = ?").bind(name, version).first<{ id: number; vectors: number }>();
+    if (before && semantic && before.vectors === 1) await dropVectors(db, before.id, semantic);
     lib = await db
       .prepare(
-        `INSERT INTO libraries (name, version, description, source, ready, updated) VALUES (?, ?, ?, ?, 0, ?)
+        `INSERT INTO libraries (name, version, description, source, ready, vectors, updated) VALUES (?, ?, ?, ?, 0, 0, ?)
          ON CONFLICT (name, version) DO UPDATE SET description = excluded.description, source = excluded.source,
-           ready = 0, chunks = 0, tokens = 0, updated = excluded.updated
-         RETURNING id`,
+           ready = 0, vectors = 0, chunks = 0, tokens = 0, updated = excluded.updated
+         RETURNING id, vectors`,
       )
       .bind(name, version, batch.library.description ?? null, batch.library.source ?? null, now)
-      .first<{ id: number }>();
-    if (lib) {
-      await dropVectors(db, lib.id, semantic);
-      await db.prepare("DELETE FROM chunks WHERE library_id = ?").bind(lib.id).run();
-    }
+      .first<{ id: number; vectors: number }>();
+    if (lib) await db.prepare("DELETE FROM chunks WHERE library_id = ?").bind(lib.id).run();
   } else {
-    lib = await db.prepare("SELECT id FROM libraries WHERE name = ? AND version = ?").bind(name, version).first<{ id: number }>();
+    lib = await db.prepare("SELECT id, vectors FROM libraries WHERE name = ? AND version = ?").bind(name, version).first<{ id: number; vectors: number }>();
   }
   if (!lib) throw new Error("library not started: send the first batch with reset: true");
 
-  const insert = db.prepare(
-    "INSERT INTO chunks (library_id, lib, seq, doc_path, doc_title, section_title, content, tokens) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-  );
-  const stmts = batch.chunks.map((c) =>
-    insert.bind(lib.id, `L${lib.id}`, c.seq, c.doc_path, c.doc_title, c.section_title, c.content, c.tokens),
-  );
-  if (stmts.length) {
-    const results = await db.batch(stmts);
+  if (batch.chunks.length) {
+    // A retried batch must not leave two copies of the same sections.
+    const seqs = batch.chunks.map((c) => c.seq);
+    const range: [number, number] = [Math.min(...seqs), Math.max(...seqs)];
+    if (!batch.reset) {
+      if (semantic) await dropVectors(db, lib.id, semantic, range);
+      await db.prepare("DELETE FROM chunks WHERE library_id = ? AND seq BETWEEN ? AND ?").bind(lib.id, range[0], range[1]).run();
+    }
+    const insert = db.prepare(
+      "INSERT INTO chunks (library_id, lib, seq, doc_path, doc_title, section_title, content, tokens) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    const libId = lib.id;
+    const results = await db.batch(
+      batch.chunks.map((c) => insert.bind(libId, `L${libId}`, c.seq, c.doc_path, c.doc_title, c.section_title, c.content, c.tokens)),
+    );
     if (semantic) {
       const values = await embed(semantic.ai, batch.chunks.map(embedInput));
-      const vectors = results.map((r, i) => ({ id: String(r.meta.last_row_id), values: values[i]!, namespace: namespaceOf(lib.id) }));
-      for (let i = 0; i < vectors.length; i += 1000) await semantic.vectors.upsert(vectors.slice(i, i + 1000));
+      const vectors = results.map((r, i) => ({ id: String(r.meta.last_row_id), values: values[i]!, namespace: namespaceOf(libId) }));
+      for (let i = 0; i < vectors.length; i += 1000) {
+        const slice = vectors.slice(i, i + 1000);
+        await withRateLimitRetry(() => semantic.vectors.upsert(slice));
+      }
     }
   }
 
   if (batch.final) {
     await db
       .prepare(
-        `UPDATE libraries SET ready = 1, updated = ?,
+        `UPDATE libraries SET ready = 1, vectors = ?, updated = ?,
            chunks = (SELECT count(*) FROM chunks WHERE library_id = ?),
            tokens = (SELECT coalesce(sum(tokens), 0) FROM chunks WHERE library_id = ?)
          WHERE id = ?`,
       )
-      .bind(now, lib.id, lib.id, lib.id)
+      .bind(semantic ? 1 : 0, now, lib.id, lib.id, lib.id)
       .run();
   }
-  return { libraryId: lib.id, inserted: stmts.length, final: !!batch.final };
+  return { libraryId: lib.id, inserted: batch.chunks.length, final: !!batch.final };
 }
 
 export async function removeLibrary(db: D1Database, name: string, version: string, semantic?: Semantic) {
-  const lib = await db.prepare("SELECT id FROM libraries WHERE name = ? AND version = ?").bind(name, version).first<{ id: number }>();
+  const lib = await db.prepare("SELECT id, vectors FROM libraries WHERE name = ? AND version = ?").bind(name, version).first<{ id: number; vectors: number }>();
   if (!lib) return false;
-  await dropVectors(db, lib.id, semantic);
+  if (semantic && lib.vectors === 1) await dropVectors(db, lib.id, semantic);
   await db.batch([
     db.prepare("DELETE FROM chunks WHERE library_id = ?").bind(lib.id),
     db.prepare("DELETE FROM libraries WHERE id = ?").bind(lib.id),

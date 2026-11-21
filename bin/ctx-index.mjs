@@ -20,7 +20,8 @@ const { values: opts, positionals: files } = parseArgs({
     all: { type: "boolean", default: false },
     dir: { type: "string", default: join(homedir(), ".context", "packages") },
     "exclude-file": { type: "string", default: join(homedir(), ".config", "ctx-registry", "exclude") },
-    concurrency: { type: "string", default: "4" },
+    // Vectorize rate-limits bursts of upserts and deletes (40041); three packages at a time stays under it.
+    concurrency: { type: "string", default: "3" },
     force: { type: "boolean", default: false },
     "dry-run": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
