@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>ctx-registry: official docs for coding agents, on your own Cloudflare</title>
-  <meta name="description" content="Give your coding agents official library docs for the exact version you run, with no quota. ctx-registry is a free, open-source registry for the context CLI on one Cloudflare Worker and one R2 bucket.">
-  <meta property="og:title" content="Official docs for your agents. Your version. No quota.">
-  <meta property="og:description" content="A free, self-hosted docs registry for coding agents. One Cloudflare Worker, one R2 bucket.">
+  <title>ctx-registry: an open-source Context7 alternative on your own Cloudflare edge</title>
+  <meta name="description" content="Your coding agent connects one MCP address and gets the right sections of a library's official docs back. Same two tools as Context7, running on your own Cloudflare account: no quota, about $11 per million questions.">
+  <meta property="og:title" content="Up-to-date docs for your agents. On your own edge. No quota.">
+  <meta property="og:description" content="An open-source Context7 alternative that runs on one Cloudflare Worker.">
   <link rel="alternate" hreflang="ko" href="/ko/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='3' fill='%23fbfbf8' stroke='%2314213d' stroke-width='2'/%3E%3Cpath d='M2 11h28' stroke='%23cf4656' stroke-width='2'/%3E%3Ccircle cx='16' cy='22' r='2' fill='%2314213d'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,46 +27,46 @@
   <main>
     <div class="wrap hero">
       <div>
-        <p class="audience">For developers who run coding agents every day</p>
-        <h1><span>Official docs for your agents.</span> <span>Your version.</span> <span>No quota.</span></h1>
-        <p class="lede">ctx-registry is a self-hosted registry for the open-source <code>context</code> CLI. Build a package from a library's official docs once, and every machine and agent installs that exact version from your own Cloudflare account. Libraries you haven't built come from the public registry, so nothing else changes.</p>
+        <p class="audience">An open-source alternative to Context7</p>
+        <h1><span>Up-to-date docs for your agents.</span> <span>On your own edge.</span> <span>No quota.</span></h1>
+        <p class="lede">ctx-registry does what Context7 does. Your coding agent connects one MCP address, asks a question, and gets back the right sections of a library's official docs. The difference is where it runs: a Cloudflare Worker on your own account, with no monthly cap, at about $11 per million questions.</p>
         <div class="actions">
           <a class="btn btn-primary" href="#deploy">Deploy on Cloudflare</a>
           <a class="btn btn-secondary" href="https://github.com/robfold/ctx-registry">Read the code on GitHub</a>
         </div>
-        <p class="fineprint">Free and open source under Apache-2.0. Clone it, then deploy with five commands.</p>
+        <p class="fineprint">Free and open source under Apache-2.0. The same two tools as Context7: <code>resolve-library-id</code> and <code>query-docs</code>.</p>
       </div>
 
       <div class="card-stage" aria-hidden="true">
         <div class="catalog-card">
-          <p class="card-call"><span>docs/next@16.4.6</span><span>5.7 MB</span></p>
-          <p>Next.js documentation</p>
-          <p>2,118 sections, searchable offline</p>
+          <p class="card-call"><span>query-docs</span><span>0.29 s</span></p>
+          <p>next@16.4.6</p>
+          <p>"protect a dashboard route"</p>
           <dl class="card-fields">
-            <dt>Source</dt><dd>github.com/vercel/next.js</dd>
-            <dt>Shelf</dt><dd>your R2 bucket</dd>
-            <dt>Read by</dt><dd>Claude Code, Codex, Cursor</dd>
+            <dt>Found</dt><dd>Authorization</dd>
+            <dt>Also</dt><dd>Optimistic checks with Proxy</dd>
+            <dt>Served</dt><dd>from your Cloudflare edge</dd>
           </dl>
-          <span class="stamp">Served from your bucket</span>
+          <span class="stamp">Answered at the edge</span>
         </div>
       </div>
     </div>
 
     <section aria-labelledby="ask">
       <div class="wrap">
-        <h2 id="ask">Where hosted docs get in the way</h2>
+        <h2 id="ask">Where a shared docs service gets in the way</h2>
         <p class="intro">From the public issue tracker of Context7, the hosted docs service most coding agents use today.</p>
         <ul class="voices">
           <li>
             <figure>
-              <blockquote>If context7.com has issues, Context7 can't fetch docs, which kind of stops us in our tracks.</blockquote>
-              <figcaption><a href="https://github.com/upstash/context7/issues/59">Context7 issue #59</a>, April 2025</figcaption>
+              <blockquote>I upgraded to a paid Context7 plan and still got <code>Monthly quota exceeded</code>.</blockquote>
+              <figcaption><a href="https://github.com/upstash/context7/issues/3406">Context7 issue #3406</a>, October 2026</figcaption>
             </figure>
           </li>
           <li>
             <figure>
-              <blockquote>I upgraded to a paid Context7 plan and still got <code>Monthly quota exceeded</code>.</blockquote>
-              <figcaption><a href="https://github.com/upstash/context7/issues/3406">Context7 issue #3406</a>, October 2026</figcaption>
+              <blockquote>If context7.com has issues, Context7 can't fetch docs, which kind of stops us in our tracks.</blockquote>
+              <figcaption><a href="https://github.com/upstash/context7/issues/59">Context7 issue #59</a>, April 2025</figcaption>
             </figure>
           </li>
           <li>
@@ -76,66 +76,70 @@
             </figure>
           </li>
         </ul>
-        <p class="answer">ctx-registry builds each package from the official source you pick, keeps every version you pin, and serves it from your own Cloudflare account. Once installed, a package is searched on the agent's machine: no quota to hit, no outage to wait out.</p>
+        <p class="answer">ctx-registry answers from your own Cloudflare account. No one else's quota sits between your agent and the docs, and a library's docs change when you publish them.</p>
       </div>
     </section>
 
     <section aria-labelledby="how">
       <div class="wrap">
         <h2 id="how">How it works</h2>
-        <p class="intro">Your agents keep using the <code>context</code> CLI and its MCP server. Only the server it downloads from changes.</p>
+        <p class="intro">Your agent speaks MCP to one Worker. The Worker searches two ways at once and returns the best sections.</p>
         <div class="how">
           <ol class="steps">
             <li>
-              <h3>Build a package</h3>
-              <p>Turn a repo, a docs site, or a folder into one SQLite file on your machine.</p>
-              <div class="code"><pre><code>context add https://github.com/honojs/hono</code></pre></div>
+              <h3>Deploy the Worker</h3>
+              <p>One Worker, a D1 database for keyword search, and a Vectorize index for meaning search.</p>
+              <div class="code"><pre><code>npm run cf:deploy</code></pre></div>
             </li>
             <li>
-              <h3>Publish it</h3>
-              <p>Upload one file, or everything you have built. Packages the server already holds are skipped.</p>
-              <div class="code"><pre><code>node bin/ctx-publish.mjs --all</code></pre></div>
+              <h3>Load official docs</h3>
+              <p>Build a package from a library's repo or docs site, then index it on your Worker.</p>
+              <div class="code"><pre><code>context add https://github.com/honojs/hono
+node bin/ctx-index.mjs --all</code></pre></div>
             </li>
             <li>
-              <h3>Install it anywhere</h3>
-              <p>Any machine, any agent, from the CLI or through the MCP tools.</p>
-              <div class="code"><pre><code>context install npm/next 16.4.6</code></pre></div>
+              <h3>Connect your agent</h3>
+              <p>Any MCP client that connects over HTTP. For Claude Code:</p>
+              <div class="code"><pre><code>claude mcp add --transport http docs https://ctx-registry.&lt;you&gt;.workers.dev/t/&lt;READ_TOKEN&gt;/mcp</code></pre></div>
             </li>
             <li>
-              <h3>Search it offline</h3>
-              <p>The search runs on the agent's machine. No network call, no meter.</p>
-              <div class="code"><pre><code>context query next@16.4.6 "middleware"</code></pre></div>
+              <h3>Ask</h3>
+              <p>The agent finds the library, then asks its question, the same way it uses Context7.</p>
+              <div class="code"><pre><code>resolve-library-id  libraryName: "next"
+query-docs          libraryId: "next@16.4.6"
+                    query: "protect a dashboard route"</code></pre></div>
             </li>
           </ol>
 
-          <svg class="diagram" viewBox="0 0 360 430" role="img" aria-labelledby="diagram-title diagram-desc">
-            <title id="diagram-title">Where the docs travel</title>
-            <desc id="diagram-desc">Your agent asks the context CLI on its own machine, which searches local SQLite files. To install a package, the CLI calls your Worker at a secret URL. The Worker serves packages from your R2 bucket, and fetches packages you don't hold from the public registry.</desc>
+          <svg class="diagram" viewBox="0 0 360 400" role="img" aria-labelledby="diagram-title diagram-desc">
+            <title id="diagram-title">How a question is answered</title>
+            <desc id="diagram-desc">Your agent sends one MCP request to your Worker on the Cloudflare edge. The Worker runs a keyword search in D1 and a meaning search in Vectorize at the same time, merges the two rankings, and returns the best sections of the docs.</desc>
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker>
-              <marker id="arrow-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-dash" d="M0 0L10 5L0 10z"/></marker>
             </defs>
             <rect class="box" x="10" y="8" width="340" height="62" rx="8"/>
             <text class="t1" x="26" y="34">Your agent</text>
-            <text class="t2" x="26" y="54">Claude Code, Codex, Cursor</text>
-            <path class="edge" d="M180 70v26" marker-end="url(#arrow)"/>
-            <rect class="box" x="10" y="100" width="340" height="62" rx="8"/>
-            <text class="t1" x="26" y="126">context CLI, same machine</text>
-            <text class="t2" x="26" y="146">searches local SQLite, works offline</text>
-            <path class="edge" d="M180 162v52" marker-end="url(#arrow)"/>
-            <text class="edge-label" x="190" y="193">install once</text>
-            <rect class="box box-own" x="10" y="218" width="340" height="62" rx="8"/>
-            <text class="t1" x="26" y="244">Your Worker</text>
-            <text class="t2" x="26" y="264">secret URL, publish needs a second token</text>
-            <path class="edge" d="M95 280v58" marker-end="url(#arrow)"/>
-            <path class="edge edge-dash" d="M265 280v58" marker-end="url(#arrow-dash)"/>
-            <text class="edge-label" x="273" y="314">if missing</text>
-            <rect class="box box-own" x="10" y="342" width="165" height="72" rx="8"/>
-            <text class="t1" x="24" y="368">Your R2 bucket</text>
-            <text class="t2" x="24" y="388">your packages</text>
-            <rect class="box" x="185" y="342" width="165" height="72" rx="8"/>
-            <text class="t1" x="199" y="368">Public registry</text>
-            <text class="t2" x="199" y="388">everything else</text>
+            <text class="t2" x="26" y="54">any MCP client over HTTP</text>
+            <path class="edge" d="M180 70v44" marker-end="url(#arrow)"/>
+            <text class="edge-label" x="190" y="97">one MCP request</text>
+            <rect class="box box-own" x="10" y="118" width="340" height="62" rx="8"/>
+            <text class="t1" x="26" y="144">Your Worker, on the edge</text>
+            <text class="t2" x="26" y="164">merges both rankings, trims to a token budget</text>
+            <path class="edge" d="M95 180v58" marker-end="url(#arrow)"/>
+            <path class="edge" d="M265 180v58" marker-end="url(#arrow)"/>
+            <text class="edge-label" x="104" y="214">words</text>
+            <text class="edge-label" x="274" y="214">meaning</text>
+            <rect class="box box-own" x="10" y="242" width="165" height="80" rx="8"/>
+            <text class="t1" x="24" y="268">D1</text>
+            <text class="t2" x="24" y="288">keyword search</text>
+            <text class="t2" x="24" y="306">over every section</text>
+            <rect class="box box-own" x="185" y="242" width="165" height="80" rx="8"/>
+            <text class="t1" x="199" y="268">Vectorize</text>
+            <text class="t2" x="199" y="288">meaning search,</text>
+            <text class="t2" x="199" y="306">Workers AI embeddings</text>
+            <text class="edge-label" x="10" y="352">Both run at the same time, so a question</text>
+            <text class="edge-label" x="10" y="370">about "middleware" still finds Next.js 16's</text>
+            <text class="edge-label" x="10" y="388">"proxy" docs.</text>
           </svg>
         </div>
       </div>
@@ -146,31 +150,31 @@
         <h2 id="get">What changes for your agents</h2>
         <dl class="features">
           <div>
-            <dt>Search runs where the agent runs</dt>
+            <dt>The same two tools as Context7</dt>
             <dd><ul>
-              <li>No per-query bill, however often an agent looks something up.</li>
-              <li>Installed docs keep working offline, and when the server is down.</li>
+              <li>Prompts that say "resolve the library, then query the docs" keep working.</li>
+              <li>A Context7-style ID such as <code>/vercel/next.js</code> resolves too.</li>
             </ul></dd>
           </div>
           <div>
-            <dt>Built from the official source you pick</dt>
+            <dt>Keyword and meaning search together</dt>
             <dd><ul>
-              <li>You choose the repo or docs site, so agents read the maintainers' own docs.</li>
-              <li>A package changes when you rebuild and publish it, not when someone else's index refreshes.</li>
+              <li>Ask about "middleware" and it still finds Next.js 16's "proxy" docs.</li>
+              <li>An exact API name still matches word for word.</li>
             </ul></dd>
           </div>
           <div>
-            <dt>One server for everything</dt>
+            <dt>You pick the source and the version</dt>
             <dd><ul>
-              <li>Packages you don't hold stream through from the public registry.</li>
-              <li>Switching is one entry in <code>~/.context/config.json</code>, and so is switching back.</li>
+              <li>Build from the maintainers' own repo or docs site.</li>
+              <li><code>next@16.2.9</code> and <code>next@16.4.6</code> stay side by side, so agents read the version you run.</li>
             </ul></dd>
           </div>
           <div>
-            <dt>Versions sit side by side</dt>
+            <dt>No quota</dt>
             <dd><ul>
-              <li><code>next@16.2.9</code> and <code>next@16.4.6</code> both stay installable.</li>
-              <li>Agents read the docs for the version you actually run.</li>
+              <li>There is no monthly cap to run into in the middle of a task.</li>
+              <li>You pay Cloudflare for what you use: about $11 per million questions at list price.</li>
             </ul></dd>
           </div>
         </dl>
@@ -180,7 +184,7 @@
     <section aria-labelledby="cost">
       <div class="wrap">
         <h2 id="cost">What it costs</h2>
-        <p class="intro">Context7 meters every lookup. ctx-registry has no meter of its own: you pay Cloudflare for storage and requests.</p>
+        <p class="intro">Context7 sells lookups. ctx-registry has no price of its own: you pay Cloudflare.</p>
         <div class="table-scroll" tabindex="0" role="region" aria-labelledby="cost">
           <table>
             <thead>
@@ -193,16 +197,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Price</th><td class="col-own">$0, Apache-2.0</td><td>$0</td><td>$10 per seat a month</td><td>Custom</td></tr>
-              <tr><th scope="row">Included lookups</th><td class="col-own">Unmetered; searches run locally</td><td>1,000 a month</td><td>2,000 per seat a month</td><td>Custom</td></tr>
-              <tr><th scope="row">Past the limit</th><td class="col-own">Under $10 per million installs at R2 list price</td><td>Blocked, then 20 calls a day</td><td>$5 per 1,000 calls</td><td>Custom</td></tr>
-              <tr><th scope="row">Private docs</th><td class="col-own">Yes, in your bucket</td><td>No</td><td>Yes, parsing billed at $5 per 1M tokens</td><td>Yes</td></tr>
+              <tr><th scope="row">Price</th><td class="col-own">$0, Apache-2.0, on Cloudflare Workers Paid ($5 a month)</td><td>$0</td><td>$10 per seat a month</td><td>Custom</td></tr>
+              <tr><th scope="row">Included questions</th><td class="col-own">No cap</td><td>1,000 a month</td><td>2,000 per seat a month</td><td>Custom</td></tr>
+              <tr><th scope="row">A million more</th><td class="col-own">About $11</td><td>Blocked, then 20 a day</td><td>$5,000 ($5 per 1,000)</td><td>Custom</td></tr>
+              <tr><th scope="row">Your own docs sources</th><td class="col-own">Yes</td><td>No</td><td>Yes, parsing billed at $5 per 1M tokens</td><td>Yes</td></tr>
               <tr><th scope="row">Self-hosted</th><td class="col-own">Yes</td><td>No</td><td>No</td><td>Yes</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="note">Context7 figures are from <a href="https://context7.com/plans">context7.com/plans</a>, read on 21 November 2026. Context7 also parses and hosts thousands of public libraries for you; ctx-registry relies on the public Neuledge registry for those.</p>
-        <p class="note">ctx-registry cost: one install is at most two R2 list calls and two reads. R2 has no egress fees, and the first 10 GB of storage is free.</p>
+        <p class="note">Context7 figures are from <a href="https://context7.com/plans">context7.com/plans</a>, read on 21 November 2026. Context7 also hosts thousands of public libraries for you; with ctx-registry you load the libraries you use.</p>
+        <p class="note">ctx-registry estimate at Cloudflare list prices: each question is one 1,024-dimension Vectorize query ($0.01 per million dimensions), one Workers AI embedding of the question, and one Worker request. Embedding the 117,819 sections we host once is estimated at under $1.</p>
       </div>
     </section>
 
@@ -210,42 +214,45 @@
       <div class="wrap">
         <h2 id="proof">We run it for our own agents</h2>
         <ul class="proof-numbers">
-          <li><strong>196</strong><span>packages served</span></li>
-          <li><strong>361.6 MB</strong><span>in one R2 bucket, inside the free tier</span></li>
-          <li><strong>16</strong><span>tests, each guard broken on purpose to prove its test fails</span></li>
+          <li><strong>196</strong><span>libraries of official docs</span></li>
+          <li><strong>117,819</strong><span>sections searchable by keyword and meaning</span></li>
+          <li><strong>0.25–0.38 s</strong><span>server time per answer, measured warm</span></li>
         </ul>
         <div class="prose">
-          <p>Every package installed from it matched the original file byte for byte, and a package it didn't hold came through from the public registry.</p>
+          <p>Asked "how do I protect a dashboard route so only logged-in users see it", it returns the Authorization section of the Next.js authentication guide first, then optimistic checks with Proxy. The handler has 40 tests, and each guard was broken on purpose to prove its test fails.</p>
         </div>
       </div>
     </section>
 
     <section id="deploy" aria-labelledby="deploy-title">
       <div class="wrap">
-        <h2 id="deploy-title">Clone it, then run five commands</h2>
-        <p class="intro">You need a Cloudflare account and Node 22.13 or later.</p>
+        <h2 id="deploy-title">Clone it, then run eight commands</h2>
+        <p class="intro">You need a Cloudflare account on Workers Paid and Node 22.13 or later.</p>
         <div class="deploy-grid">
           <div>
             <h3>Deploy the Worker</h3>
             <div class="code"><pre><code>git clone https://github.com/robfold/ctx-registry
 cd ctx-registry
 npm install
+npx wrangler d1 create ctx-docs
+npx wrangler d1 migrations apply ctx-docs --remote
+npx wrangler vectorize create ctx-docs-vectors --dimensions=1024 --metric=cosine
 npx wrangler r2 bucket create ctx-registry
 npm run cf:deploy
 openssl rand -hex 32 | npx wrangler secret put READ_TOKEN
 openssl rand -hex 32 | npx wrangler secret put PUBLISH_TOKEN</code></pre></div>
-            <p>Until both tokens are set, every path except <code>/healthz</code> answers 404. Keep both tokens in your password manager.</p>
+            <p>Paste the database id that <code>d1 create</code> prints into <code>wrangler.jsonc</code> before the migration. Until both tokens are set, every path except <code>/healthz</code> answers 404.</p>
           </div>
           <div>
-            <h3>Point the CLI at it</h3>
+            <h3>Connect an agent</h3>
             <div class="code"><pre><code>{
-  "servers": [
-    { "name": "mine", "default": true,
-      "url": "https://ctx-registry.&lt;you&gt;.workers.dev/t/&lt;READ_TOKEN&gt;" },
-    { "name": "neuledge", "url": "https://api.context.neuledge.com" }
-  ]
+  "mcpServers": {
+    "docs": {
+      "url": "https://ctx-registry.&lt;you&gt;.workers.dev/t/&lt;READ_TOKEN&gt;/mcp"
+    }
+  }
 }</code></pre></div>
-            <p>Save it as <code>~/.context/config.json</code> on each machine. To go back, delete the <code>mine</code> entry: the CLI returns to the public registry.</p>
+            <p>Clients that can send headers can use <code>/mcp</code> with <code>Authorization: Bearer &lt;READ_TOKEN&gt;</code> instead, so the token stays out of the URL.</p>
           </div>
         </div>
       </div>
@@ -255,29 +262,29 @@ openssl rand -hex 32 | npx wrangler secret put PUBLISH_TOKEN</code></pre></div>
       <div class="wrap">
         <h2 id="limits">What it doesn't do yet</h2>
         <ul class="limits">
-          <li>The read token sits in a URL. Treat it like an API key, and rotate it with one command if it leaks.</li>
-          <li>There is no rate limit for anyone who holds the read token.</li>
-          <li>Each package must be under 95 MB.</li>
-          <li>Packages are built on your machine. Automatic rebuilds are not in this release.</li>
+          <li>Answers are the docs' own sections. Context7 also writes a short summary for each code example; ctx-registry does not.</li>
+          <li>You choose and load the libraries. There is no shared catalog of thousands of libraries, and automatic rebuilds are not in this release.</li>
+          <li>The read token works like an API key. There is no rate limit for anyone who holds it.</li>
+          <li>From some networks, <code>workers.dev</code> traffic takes a long route; put the Worker on your own domain if that matters.</li>
         </ul>
       </div>
     </section>
 
     <section class="closing" aria-labelledby="closing">
       <div class="wrap">
-        <h2 id="closing">Give your agents a library you own.</h2>
+        <h2 id="closing">Give your agents a docs server you own.</h2>
         <div class="actions">
           <a class="btn btn-primary" href="#deploy">Deploy on Cloudflare</a>
           <a class="btn btn-secondary" href="https://github.com/robfold/ctx-registry">Read the code on GitHub</a>
         </div>
-        <p class="ps">P.S. If your agents still call a metered service for docs they have read a hundred times, each of those lookups still counts against a quota. Five commands move those docs into your own bucket.</p>
+        <p class="ps">P.S. If your agents stop mid-task because a docs service ran out of quota, every one of those stops is avoidable. Eight commands put the same two tools on your own edge.</p>
       </div>
     </section>
   </main>
 
   <footer class="wrap site-foot">
-    <p>ctx-registry is open source under Apache-2.0 and built on <a href="https://github.com/neuledge/context">@neuledge/context</a>.</p>
-    <p>Not affiliated with Neuledge, Upstash, or Context7.</p>
+    <p>ctx-registry is open source under Apache-2.0. Packages are built with <a href="https://github.com/neuledge/context">@neuledge/context</a>.</p>
+    <p>Not affiliated with Context7, Upstash, or Neuledge.</p>
   </footer>
 
   <script>

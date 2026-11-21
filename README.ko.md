@@ -2,88 +2,88 @@
 
 [English](README.md) · 한국어
 
-코딩 에이전트에게 라이브러리 공식 문서를 내가 쓰는 버전 그대로, 한도 없이 줍니다. Cloudflare Worker 하나와 R2 버킷 하나로 돌아갑니다.
+내 Cloudflare 계정에서 도는 오픈소스 Context7 대안입니다.
 
-[`@neuledge/context`](https://github.com/neuledge/context) CLI와 MCP 서버가 이 서버를 씁니다. 라이브러리 공식 문서로 패키지를 한 맥에서 한 번 만들어 올리면, 다른 맥과 에이전트가 모두 같은 파일을 받습니다. 내가 갖고 있지 않은 패키지는 Neuledge 공개 레지스트리에서 대신 받아 줍니다. 그래서 CLI가 이 서버 하나만 바라봐도 됩니다.
+코딩 에이전트가 MCP 주소 하나에 연결해 질문하면, 라이브러리 공식 문서에서 맞는 절을 찾아 돌려줍니다. Context7과 같은 도구 두 개(`resolve-library-id`, `query-docs`)를 써서, Context7용으로 쓴 프롬프트가 그대로 통합니다. Cloudflare Worker 하나와 D1(단어 검색), Vectorize(의미 검색), Workers AI(임베딩)로 돕니다. 월 한도가 없고, Cloudflare 정가로 질문 100만 개에 약 11달러입니다.
 
-- **검색은 에이전트의 맥에서 합니다.** 서버는 SQLite 파일만 내줍니다. 설치한 뒤에는 검색 비용이 0이고 오프라인에서도 됩니다.
-- **출처와 버전을 내가 정합니다.** 공식 저장소나 문서 사이트로 만들고, 고정한 버전을 모두 남기고, 갱신 시점도 내가 정합니다.
-- **비용이 거의 들지 않습니다.** R2는 내보내기(egress) 요금이 없습니다. 설치 1회는 R2 목록 조회(Class A) 최대 2번과 읽기(Class B) 최대 2번입니다. `docs` 레지스트리도 함께 보기 때문입니다. 정가로 설치 100만 회에 $10 미만입니다. R2 무료 한도는 10GB입니다.
+- **단어 검색과 의미 검색을 함께 씁니다.** 둘을 동시에 돌려 순위를 합칩니다. 그래서 "middleware"를 물어도 Next.js 16의 "proxy" 문서를 찾고, 정확한 API 이름은 글자 그대로 맞춥니다.
+- **출처와 버전을 내가 정합니다.** [`@neuledge/context`](https://github.com/neuledge/context) CLI로 메인테이너의 저장소나 문서 사이트에서 패키지를 만듭니다. `next@16.2.9`와 `next@16.4.6`을 나란히 둡니다.
+- **원하면 오프라인 사본도 됩니다.** 같은 서버가 `context` CLI용 패키지 레지스트리도 겸합니다. 맥에서 패키지를 한 번 받아 로컬에서 검색할 수 있습니다.
 
 ## 동작
 
-`context` CLI는 엔드포인트 두 개만 부르고 인증 헤더를 보내지 않습니다.
-
 ```
-GET {server}/search?registry=npm&name=next                  -> [{registry, name, version, size, description}, ...]  첫 항목 = 최신
-GET {server}/packages/{registry}/{name}/{version}/download  -> 패키지 .db 파일
+에이전트 ──MCP──▶ Worker ──┬─▶ D1 (FTS5)                  단어 순위
+                           └─▶ Workers AI ─▶ Vectorize      의미 순위
+                            ◀── 합친 순위(RRF), 토큰 한도에 맞춰 자름
 ```
 
-그래서 읽기 잠금은 비밀 경로입니다. `{server}`는 `https://<worker>/t/<READ_TOKEN>`입니다. 다른 경로는 모두 404를 돌려줍니다.
-
-| 요청 | 동작 |
+| 경로 | 하는 일 |
 |---|---|
-| `search` | 내 버전을 먼저(semver는 새 버전부터, `main` 같은 이름표는 올린 시각 순), 그다음 내가 없는 upstream 버전을 붙입니다. `&local=1`을 붙이면 upstream을 건너뜁니다. |
-| `download` | 내 사본이 있으면 그것을, 없으면 upstream에서 받아 그대로 흘려보냅니다. |
-| `PUT /packages/{registry}/{name}/{version}` | 게시. `Authorization: Bearer <PUBLISH_TOKEN>`이 필요합니다. 본문은 SQLite 파일이어야 합니다. |
-| `DELETE /packages/{registry}/{name}/{version}` | 삭제. 같은 토큰을 씁니다. |
-| `GET /index` | 내가 가진 전체 목록. |
-| `GET /healthz` | `ok`. 토큰이 필요 없습니다. |
+| `POST /t/<READ_TOKEN>/mcp` | Streamable HTTP 방식 MCP(JSON 응답, 세션 없음). 도구: `resolve-library-id`, `query-docs` |
+| `POST /mcp` + `Authorization: Bearer <READ_TOKEN>` | 같은 기능. 헤더를 보낼 수 있는 클라이언트용 |
+| `PUT /t/<READ_TOKEN>/index/{name}/{version}` | 절 묶음 색인. `Authorization: Bearer <PUBLISH_TOKEN>` 필요. `bin/ctx-index.mjs`가 씀 |
+| `GET /t/<READ_TOKEN>/libraries` | 색인된 라이브러리와 절 수 |
+| `GET /t/<READ_TOKEN>/search`, `.../packages/...` | `context` CLI용 패키지 레지스트리(받아서 오프라인 검색) |
+| `GET /healthz` | `ok`. 토큰 불필요 |
 
-직접 만든 패키지는 레지스트리 이름 `docs` 아래에 둡니다. `npm/next`를 찾거나 받을 때 `docs/next`도 함께 봅니다. 그래서 `context install npm/next@16.4.6`이 직접 만든 사본을 찾습니다.
+`query-docs`의 `libraryId`는 `name@version`, 버전 없는 `name`(최신판), 또는 Context7식 `/org/project`를 받습니다. `/org/project`는 라이브러리 출처 URL과 맞춰 봅니다. 다른 경로는 모두 404입니다.
 
 ## 배포
 
-Cloudflare 계정과 Node 22.13 이상이 필요합니다.
+Workers Paid 플랜의 Cloudflare 계정과 Node 22.13 이상이 필요합니다.
 
 ```sh
 git clone https://github.com/robfold/ctx-registry && cd ctx-registry
 npm install
-export CLOUDFLARE_ACCOUNT_ID=<계정 ID>
+npx wrangler d1 create ctx-docs                      # 나온 ID를 wrangler.jsonc에 붙여 넣기
+npx wrangler d1 migrations apply ctx-docs --remote
+npx wrangler vectorize create ctx-docs-vectors --dimensions=1024 --metric=cosine
 npx wrangler r2 bucket create ctx-registry
-npm run cf:deploy          # 타입 검사 + 시험 + wrangler deploy
-
+npm run cf:deploy                                    # 타입 검사 + 시험 + wrangler deploy
 openssl rand -hex 32 | npx wrangler secret put READ_TOKEN
 openssl rand -hex 32 | npx wrangler secret put PUBLISH_TOKEN
 ```
 
-두 토큰은 비밀번호 관리자에 넣어 둡니다. 두 비밀값을 넣기 전에는 `/healthz` 말고 모든 경로가 404입니다. 32자보다 짧은 토큰은 받지 않습니다.
+두 토큰은 비밀번호 관리자에 보관합니다. 두 비밀값을 넣기 전에는 `/healthz` 말고 모든 경로가 404입니다. 32자보다 짧은 토큰은 받지 않습니다. 단어 검색만 쓰려면 `wrangler.jsonc`에서 `ai`와 `vectorize` 항목을 지웁니다.
 
-## CLI 연결
+## 에이전트 연결
 
-맥마다 `~/.context/config.json`을 고칩니다.
+Claude Code:
 
-```json
-{
-  "servers": [
-    { "name": "mine", "url": "https://ctx-registry.<subdomain>.workers.dev/t/<READ_TOKEN>", "default": true },
-    { "name": "neuledge", "url": "https://api.context.neuledge.com" }
-  ]
-}
+```sh
+claude mcp add --transport http docs https://ctx-registry.<subdomain>.workers.dev/t/<READ_TOKEN>/mcp
 ```
 
-그러면 `context browse`, `context install`, MCP 도구 `search_packages`·`download_package`가 내 서버를 씁니다. 이 파일에는 읽기 토큰이 들어 있으니 `chmod 600`으로 잠급니다.
+다른 MCP 클라이언트:
 
-## 게시
+```json
+{ "mcpServers": { "docs": { "url": "https://ctx-registry.<subdomain>.workers.dev/t/<READ_TOKEN>/mcp" } } }
+```
+
+## 문서 올리기
 
 ```sh
 export CTX_REGISTRY_URL=https://ctx-registry.<subdomain>.workers.dev/t/<READ_TOKEN>
 export CTX_PUBLISH_TOKEN=<PUBLISH_TOKEN>
 
-context add https://github.com/honojs/hono --name hono --pkg-version 4.12.27   # 로컬에서 빌드
-node bin/ctx-publish.mjs ~/.context/packages/hono@4.12.27.db                  # 파일 하나 게시
-node bin/ctx-publish.mjs --all --dry-run                                      # ~/.context/packages 전체 미리보기
-node bin/ctx-publish.mjs --all
+context add https://github.com/honojs/hono       # 내 맥에서 패키지 만들기
+node bin/ctx-index.mjs --all                      # ~/.context/packages 전체를 MCP 검색용으로 색인
+node bin/ctx-publish.mjs --all                    # 선택: 오프라인 다운로드용 파일도 올리기
 ```
 
-`--all`은 서버에 같은 크기로 이미 있는 패키지를 건너뜁니다. 올리지 않을 패키지는 `~/.config/ctx-registry/exclude`에 한 줄에 정규식 하나씩 적습니다. 각 줄을 `name@version`과 패키지의 출처 URL에 맞춰 봅니다.
+두 스크립트 모두 서버에 이미 있는 것은 건너뜁니다. `ctx-index --force`는 전부 다시 보냅니다(예: 의미 검색을 켠 뒤). 올리지 않을 패키지는 `~/.config/ctx-registry/exclude`에 한 줄에 정규식 하나씩 적습니다. 각 줄을 `name@version`과 패키지 출처 URL에 맞춰 봅니다.
+
+## 비용
+
+Cloudflare 정가로 질문 1개는 1,024차원 Vectorize 조회 1번(조회 차원 100만당 $0.01), 질문 임베딩 1번(`@cf/baai/bge-m3`, 100만 토큰당 $0.012), Worker 요청 1번입니다. 질문 100만 개에 약 11달러이고, Workers Paid 월 $5가 따로 듭니다. 절 임베딩도 토큰당 같은 값이라, 절 10만 개 색인(절마다 앞 2,000자까지 임베딩)이 1달러 미만입니다.
 
 ## 한계
 
-- 읽기 토큰은 URL과 `~/.context/config.json`에 들어갑니다. API 키처럼 다루고, 새면 `wrangler secret put READ_TOKEN`으로 바꿉니다.
-- 사용량 제한이 없습니다. 읽기 토큰을 가진 사람은 얼마든지 받을 수 있습니다.
-- 게시 파일을 메모리에 올리므로 패키지는 95MB보다 작아야 합니다(Free·Pro 요청 본문 한도 100MB).
-- 패키지 빌드(`context add`)는 Worker가 아니라 내 맥에서 돌아갑니다.
+- 답은 문서 원래의 절입니다. Context7은 코드 예시마다 짧은 요약을 따로 써 두지만, ctx-registry는 쓰지 않습니다.
+- 라이브러리는 내가 골라 올립니다. 자동 재빌드는 이번 판에 없습니다.
+- 읽기 토큰은 API 키처럼 동작하고, 토큰을 가진 쪽에는 사용량 제한이 없습니다. 새면 `wrangler secret put READ_TOKEN`으로 바꿉니다.
+- 색인 묶음 하나는 절 200개까지입니다. `ctx-index`가 알아서 나눕니다.
 
 ## 시험
 
@@ -91,8 +91,8 @@ node bin/ctx-publish.mjs --all
 npm run check    # tsc + vitest
 ```
 
-시험은 메모리 안의 가짜 R2와 가짜 upstream으로 요청 처리기를 돌립니다.
+시험은 Node 내장 SQLite에 실제 마이그레이션(FTS5, 트리거, bm25)을 적용해 처리기를 돌립니다. Workers AI와 Vectorize는 대역으로 바꾸되, Vectorize의 호출당 한도는 그대로 지킵니다.
 
 ## 라이선스
 
-`@neuledge/context`와 같은 Apache-2.0입니다. 이 프로젝트는 Neuledge와 관계가 없습니다.
+Apache-2.0. 패키지는 `@neuledge/context`(Apache-2.0)로 만듭니다. Context7, Upstash, Neuledge와 관계가 없습니다.

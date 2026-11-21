@@ -10,7 +10,14 @@
  * public upstream registry, so this server can be the CLI's only default.
  */
 
+import { indexBatch, listLibraries, removeLibrary, validateBatch, type IndexBatch, type Semantic } from "./docs";
+import { handleMcp } from "./mcp";
+
 export interface Env {
+  DB: D1Database;
+  /** Optional: with both bindings, search fuses keyword and meaning results. */
+  AI?: Ai;
+  VECTORS?: VectorizeIndex;
   REGISTRY: R2Bucket;
   READ_TOKEN: string;
   PUBLISH_TOKEN: string;
@@ -267,6 +274,40 @@ async function index(env: Env): Promise<Response> {
   return json(entries);
 }
 
+const semanticOf = (env: Env): Semantic | undefined => (env.AI && env.VECTORS ? { ai: env.AI, vectors: env.VECTORS } : undefined);
+
+/** Adds `Server-Timing: app;dur=<ms>` so clients can see time spent in the Worker and D1, apart from the network. */
+async function timed(run: () => Promise<Response>): Promise<Response> {
+  const started = Date.now();
+  const res = await run();
+  const headers = new Headers(res.headers);
+  headers.set("server-timing", `app;dur=${Date.now() - started}`);
+  return new Response(res.body, { status: res.status, headers });
+}
+
+const MAX_INDEX_BODY = 8 * 1024 * 1024;
+
+async function indexRoute(env: Env, req: Request, name: string, version: string): Promise<Response> {
+  if (Number(req.headers.get("content-length") ?? "0") > MAX_INDEX_BODY) throw new HttpError(413, "batch too large");
+  let batch: IndexBatch;
+  try {
+    batch = validateBatch(await req.json());
+  } catch (err) {
+    throw new HttpError(400, err instanceof Error ? err.message : "invalid batch");
+  }
+  if (batch.library.name !== name || batch.library.version !== version) {
+    throw new HttpError(400, "library name and version must match the path");
+  }
+  try {
+    return json(await indexBatch(env.DB, batch, undefined, semanticOf(env)));
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("library not started")) throw new HttpError(409, err.message);
+    // Only the publisher reaches this route, so the real cause is safe to return.
+    console.error("index failed", err);
+    throw new HttpError(500, `index failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 function decodeSegments(parts: string[]): string[] {
   try {
     return parts.map((p) => decodeURIComponent(p));
@@ -280,14 +321,33 @@ export async function handle(req: Request, env: Env, fetcher: Fetcher): Promise<
   try {
     if (url.pathname === "/healthz") return new Response("ok\n");
 
-    // /t/<token>/<rest...>; every unauthenticated path looks like a plain 404.
     const raw = url.pathname.split("/").filter(Boolean);
+    const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    const method = req.method.toUpperCase();
+
+    // MCP clients that can send headers may use /mcp with the read token as a bearer token.
+    if (raw.length === 1 && raw[0] === "mcp" && tokenOk(bearer, env.READ_TOKEN)) {
+      return await timed(() => handleMcp(req, env.DB, semanticOf(env)));
+    }
+
+    // /t/<token>/<rest...>; every unauthenticated path looks like a plain 404.
     if (raw[0] !== "t" || !tokenOk(raw[1], env.READ_TOKEN)) {
       return json({ error: "not found" }, 404);
     }
     const route = decodeSegments(raw.slice(2));
-    const method = req.method.toUpperCase();
 
+    if (route.length === 1 && route[0] === "mcp") {
+      return await timed(() => handleMcp(req, env.DB, semanticOf(env)));
+    }
+    if (route.length === 1 && route[0] === "libraries" && method === "GET") {
+      return json(await listLibraries(env.DB));
+    }
+    if (route[0] === "index" && route.length === 3 && (method === "PUT" || method === "DELETE")) {
+      if (!tokenOk(bearer, env.PUBLISH_TOKEN)) return json({ error: "unauthorized" }, 401);
+      const [, name, version] = route as [string, string, string];
+      if (method === "DELETE") return json({ removed: await removeLibrary(env.DB, name, version, semanticOf(env)) });
+      return await indexRoute(env, req, name, version);
+    }
     if (route.length === 1 && route[0] === "search" && method === "GET") {
       return await search(env, fetcher, url);
     }
@@ -301,7 +361,6 @@ export async function handle(req: Request, env: Env, fetcher: Fetcher): Promise<
           return await download(env, fetcher, registry, name, version);
         }
         if (route.length === 4 && (method === "PUT" || method === "DELETE")) {
-          const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
           if (!tokenOk(bearer, env.PUBLISH_TOKEN)) return json({ error: "unauthorized" }, 401);
           if (method === "PUT") return await publish(env, req, registry, name, version);
           await env.REGISTRY.delete(objectKey(registry, name, version));

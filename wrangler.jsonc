@@ -8,6 +8,14 @@
   // Version preview hosts would be a second public hostname; keep them off.
   "preview_urls": false,
   "r2_buckets": [{ "binding": "REGISTRY", "bucket_name": "ctx-registry" }],
+  // Server-side search. Replace database_id with the id `wrangler d1 create ctx-docs` prints for you.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "ctx-docs", "database_id": "17048fa2-0568-47dd-9b9a-80004b43ff4a", "migrations_dir": "migrations" }
+  ],
+  // Optional meaning search. Remove both to run on keyword search alone.
+  // Create the index first: wrangler vectorize create ctx-docs-vectors --dimensions=1024 --metric=cosine
+  "ai": { "binding": "AI" },
+  "vectorize": [{ "binding": "VECTORS", "index_name": "ctx-docs-vectors" }],
   "vars": { "UPSTREAM_URL": "https://api.context.neuledge.com" },
   // READ_TOKEN and PUBLISH_TOKEN are secrets: `wrangler secret put READ_TOKEN`.
   "observability": { "enabled": true }
