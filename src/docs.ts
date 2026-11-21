@@ -211,8 +211,19 @@ const VECTOR_HITS = 30;
 const RRF_K = 60;
 
 export const namespaceOf = (libraryId: number) => `L${libraryId}`;
+/**
+ * Text sent to the embedding model. Cutting at a UTF-16 index can split an emoji and leave
+ * half a surrogate pair, which Workers AI rejects (8006 "must be valid JSON"); drop that half
+ * and replace any other lone surrogate with U+FFFD.
+ */
+export function wellFormed(text: string, maxChars = Number.POSITIVE_INFINITY): string {
+  let s = text.length > maxChars ? text.slice(0, maxChars) : text;
+  if (/[\uD800-\uDBFF]$/.test(s)) s = s.slice(0, -1);
+  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "�");
+}
+
 export const embedInput = (c: { doc_title: string; section_title: string; content: string }) =>
-  `${c.doc_title} > ${c.section_title}\n${c.content}`.slice(0, EMBED_CHARS);
+  wellFormed(`${c.doc_title} > ${c.section_title}\n${c.content}`, EMBED_CHARS);
 
 export async function embed(ai: Ai, texts: string[]): Promise<number[][]> {
   const out: number[][] = [];
@@ -259,7 +270,7 @@ async function chunksById(db: D1Database, libraryId: number, ids: number[]): Pro
 
 async function meaningHits(db: D1Database, library: Library, query: string, semantic: Semantic): Promise<ChunkHit[]> {
   if (library.vectors !== 1) return [];
-  const [vector] = await embed(semantic.ai, [query]);
+  const [vector] = await embed(semantic.ai, [wellFormed(query, EMBED_CHARS)]);
   if (!vector) return [];
   const res = await semantic.vectors.query(vector, { topK: VECTOR_HITS, namespace: namespaceOf(library.id) });
   return chunksById(db, library.id, res.matches.map((m) => Number(m.id)).filter(Number.isInteger));

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { findLibrary, indexBatch, removeLibrary, searchDocs, withRateLimitRetry, type IndexChunk, type Semantic } from "../src/docs";
+import { embedInput, findLibrary, indexBatch, removeLibrary, searchDocs, wellFormed, withRateLimitRetry, type IndexChunk, type Semantic } from "../src/docs";
 import { fakeD1 } from "./d1-sqlite";
 
 /**
@@ -135,6 +135,15 @@ describe("meaning search", () => {
     expect(store.size).toBe(152);
     await indexBatch(db, { library: { name: "big", version: "1.0.0" }, chunks: [], reset: true, final: true }, undefined, semantic);
     expect(store.size).toBe(2);
+  });
+
+  it("never sends half an emoji to the embedding model", () => {
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    // 1,999 letters, then an emoji whose first half is character 2,000: a plain slice keeps only that half.
+    const cutInEmoji = embedInput({ doc_title: "d", section_title: "s", content: "x".repeat(2000 - "d > s\n".length - 1) + "😀 tail" });
+    expect(lone.test(cutInEmoji)).toBe(false);
+    expect(wellFormed("a\uD800b")).toBe("a�b");
+    expect(wellFormed("ok 😀")).toBe("ok 😀");
   });
 
   it("retries a rate-limited Vectorize call and gives up on other errors at once", async () => {
