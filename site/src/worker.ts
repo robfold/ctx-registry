@@ -29,11 +29,12 @@ export async function handleSignup(req: Request, db: D1Database, now = new Date(
   const libraries = typeof body.libraries === "string" ? body.libraries.trim().slice(0, 300) : "";
   const lang = body.lang === "ko" ? "ko" : "en";
 
+  // The first sign-up for an address stays as it is: nobody can verify who is submitting,
+  // so a later request must not overwrite someone else's entry.
   await db
     .prepare(
       `INSERT INTO waitlist (email, libraries, lang, created, updated) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT (email) DO UPDATE SET libraries = coalesce(nullif(excluded.libraries, ''), waitlist.libraries),
-         lang = excluded.lang, updated = excluded.updated`,
+       ON CONFLICT (email) DO NOTHING`,
     )
     .bind(email, libraries || null, lang, now, now)
     .run();

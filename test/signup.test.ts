@@ -22,9 +22,9 @@ describe("sign-up form", () => {
     expect(rows()).toEqual([]);
   });
 
-  it("keeps one row per email and does not wipe earlier libraries with an empty field", async () => {
+  it("keeps the first sign-up for an address; a later request cannot overwrite it", async () => {
     await post({ email: "dev@example.com", libraries: "next" });
-    await post({ email: "dev@example.com", libraries: "" });
+    expect((await post({ email: "dev@example.com", libraries: "spam", lang: "ko" })).status).toBe(200);
     expect(rows()).toEqual([{ email: "dev@example.com", libraries: "next", lang: "en" }]);
   });
 
