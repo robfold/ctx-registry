@@ -1,9 +1,12 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  // Landing page only: static assets, no Worker code.
+  // Landing page: static files from ./public, plus /api/signup for the "Get your URL" form.
   "name": "ctx-registry-site",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "preview_urls": false,
-  "assets": { "directory": "./public" }
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // Same database as the docs server; sign-ups live in the waitlist table (migration 0003).
+  "d1_databases": [{ "binding": "DB", "database_name": "ctx-docs", "database_id": "17048fa2-0568-47dd-9b9a-80004b43ff4a" }]
 }

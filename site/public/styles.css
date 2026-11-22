@@ -253,6 +253,25 @@ thead .col-own { color: var(--ink); }
 .deploy-grid h3 { margin: 0 0 0.75rem; font-size: 1.15rem; font-weight: 600; }
 .deploy-grid p { margin: 0.9rem 0 0; color: var(--muted); font-size: 1rem; }
 
+/* Get-your-URL form */
+.signup { display: grid; gap: 1rem; max-width: 32rem; }
+.signup label { display: grid; gap: 0.35rem; font-weight: 500; font-size: 1rem; }
+.signup .hint { font-weight: 400; color: var(--muted); }
+.signup input[type="email"], .signup input[type="text"] {
+  width: 100%; min-height: 3rem; padding: 0.6rem 0.85rem;
+  border: 2px solid var(--rule); border-radius: 8px;
+  background: var(--paper); color: var(--ink); font: 400 1rem/1.4 var(--sans);
+}
+.signup input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.signup .btn { justify-self: start; }
+.signup-status { min-height: 1.6em; margin: 0; font-size: 1rem; }
+.signup-status[data-state="ok"] { color: var(--ink); font-weight: 600; }
+.signup-status[data-state="error"] { color: var(--card-red); font-weight: 600; }
+.trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.connect-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+@media (min-width: 960px) { .connect-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem; } }
+.connect-grid h3 { margin: 0 0 0.75rem; font-size: 1.15rem; font-weight: 600; }
+
 /* Limits */
 .limits { margin: 0; padding-left: 1.2rem; max-width: 44rem; }
 .limits li + li { margin-top: 0.6rem; }
