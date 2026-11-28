@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { handleSignup } from "../site/src/worker";
+import site, { handleSignup, SIGNUP_PATH } from "../site/src/worker";
 import { fakeD1 } from "./d1-sqlite";
 
 let db: ReturnType<typeof fakeD1>;
@@ -30,6 +30,23 @@ describe("sign-up form", () => {
 
   it("answers bots that fill the hidden field without storing them", async () => {
     expect((await post({ email: "bot@example.com", website: "http://spam.test" })).status).toBe(200);
+    expect(rows()).toEqual([]);
+  });
+});
+
+describe("site routing under robfold.dev/ctx-registry/", () => {
+  const env = () => ({ DB: db, ASSETS: { fetch: async () => new Response("asset", { status: 200 }) } }) as never;
+  const send = (path: string) =>
+    site.fetch(new Request(`https://robfold.dev${path}`, { method: "POST", body: JSON.stringify({ email: "dev@example.com" }) }), env(), {} as never);
+
+  it("stores sign-ups posted to the prefixed endpoint", async () => {
+    expect(SIGNUP_PATH).toBe("/ctx-registry/api/signup");
+    expect((await send(SIGNUP_PATH)).status).toBe(200);
+    expect(rows()).toEqual([{ email: "dev@example.com", libraries: null, lang: "en" }]);
+  });
+
+  it("does not treat the old root endpoint as the form", async () => {
+    expect(await (await send("/api/signup")).text()).toBe("asset");
     expect(rows()).toEqual([]);
   });
 });

@@ -41,10 +41,13 @@ export async function handleSignup(req: Request, db: D1Database, now = new Date(
   return json({ ok: true });
 }
 
+// The site lives at robfold.dev/ctx-registry/, so every path, the endpoint included, carries that prefix.
+export const SIGNUP_PATH = "/ctx-registry/api/signup";
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/api/signup") return handleSignup(req, env.DB);
+    if (url.pathname === SIGNUP_PATH) return handleSignup(req, env.DB);
     return env.ASSETS.fetch(req);
   },
 } satisfies ExportedHandler<SiteEnv>;

@@ -38,7 +38,7 @@ if (form && status) {
     status.dataset.state = "";
     status.textContent = t.sending;
     try {
-      const res = await fetch("/api/signup", {
+      const res = await fetch("/ctx-registry/api/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...data, lang: ko ? "ko" : "en" }),
