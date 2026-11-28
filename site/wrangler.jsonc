@@ -1,12 +1,17 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  // Landing page: static files from ./public, plus /api/signup for the "Get your URL" form.
+  // Landing page at robfold.dev/ctx-registry/: static files from ./public/ctx-registry/, plus
+  // /ctx-registry/api/signup for the "Get your URL" form. The old standalone address is off.
   "name": "ctx-registry-site",
   "main": "src/worker.ts",
   "compatibility_date": "2026-11-01",
-  "workers_dev": true,
+  "workers_dev": false,
   "preview_urls": false,
-  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "routes": [
+    { "pattern": "robfold.dev/ctx-registry", "zone_name": "robfold.dev" },
+    { "pattern": "robfold.dev/ctx-registry/*", "zone_name": "robfold.dev" }
+  ],
+  "assets": { "directory": "./public", "binding": "ASSETS", "html_handling": "auto-trailing-slash" },
   // Same database as the docs server; sign-ups live in the waitlist table (migration 0003).
   "d1_databases": [{ "binding": "DB", "database_name": "ctx-docs", "database_id": "17048fa2-0568-47dd-9b9a-80004b43ff4a" }]
 }
